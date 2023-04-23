@@ -1,17 +1,21 @@
 import express from "express";
-import { ProductManager } from "./scripts/ProductManager.js";
+import productsRouter from "./routes/products.router.js";
+import cartsRouter from "./routes/carts.router.js";
 
 const app = express();
+app.use(express.json())
 
-const prod = new ProductManager("productos.json");
+app.use("/api/products", productsRouter);
+app.use("/api/carts", cartsRouter);
 
-app.get("/", (req, res) => {
-    res.send(`serverup `);
-});
 app.listen(8080, () => {
     console.log("Server UP");
 });
 
+/*
+app.get("/", (req, res) => {
+    res.send(`serverup `);
+});
 app.get("/products", (req, res) => {
     let { limit } = req.query;
     if( limit) {
@@ -29,4 +33,4 @@ app.get("/product/:id", (req, res) => {
         res.status(200).send(foundprod);
     }
 });
-
+*/

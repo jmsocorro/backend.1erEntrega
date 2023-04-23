@@ -3,16 +3,15 @@ import * as fs from "fs";
 class ProductManager {
     #products;
     #path; // ruta del archivo
-    constructor(path = "productos.txt") {
+    constructor(path = "./src/productos.json") {
         this.#path = path;
         this.#products = [];
         const loadProducts = async () => {
             try {
                 // Si el archivo existe copio los datos del archivo a #products.
-                this.#products = JSON.parse(await fs.promises.readFile(
-                    this.#path,
-                    "utf-8"
-                ));
+                this.#products = JSON.parse(
+                    await fs.promises.readFile(this.#path, "utf-8")
+                );
             } catch {
                 // Si el archivo no existe inicializo #products con un array vacio.
                 this.#products = [];
@@ -20,57 +19,6 @@ class ProductManager {
         };
         loadProducts();
     }
-    addProduct = (title, description, price, thumbnail, code, stock) => {
-        const id =
-            this.#products.length === 0
-                ? 1
-                : this.#products[this.#products.length - 1].id + 1;
-        let error = "";
-        error += !title || title.length === 0 ? "title es obligatorio. " : "";
-        error +=
-            !description || description.length === 0
-                ? "description es obligatorio. "
-                : "";
-        error += !price || price.length === 0 ? "price es obligatorio. " : "";
-        error +=
-            !thumbnail || thumbnail.length === 0
-                ? "thumbnail es obligatorio. "
-                : "";
-        error += !code || code.length === 0 ? "code es obligatorio. " : "";
-        error += !stock || stock.length === 0 ? "stock es obligatorio. " : "";
-
-        const found = this.#products.find((producto) => producto.code === code);
-        if (found) {
-            error += "Ya se encuentra un producto con el mismo code. ";
-        }
-
-        if (error.length > 0) {
-            console.log("Ocurrieron los siguientes errores: " + error);
-        } else {
-            const product = {
-                id,
-                title,
-                description,
-                price,
-                thumbnail,
-                code,
-                stock,
-            };
-            this.#products.push(product);
-            const saveProducts = async () => {
-                try {
-                    fs.promises.writeFile(
-                        this.#path,
-                        JSON.stringify(this.#products)
-                    );
-                } catch (err) {
-                    console.log(err);
-                }
-            };
-            saveProducts();
-        }
-    };
-
     getProducts = () => {
         return this.#products;
     };
@@ -89,64 +37,151 @@ class ProductManager {
         return this.#path;
     };
 
-    updateProduct = (id, title, description, price, thumbnail, code, stock) => {
+    addProduct = ({
+        title,
+        description,
+        price,
+        thumbnails = [],
+        code,
+        stock,
+        category,
+        status = true,
+    }) => {
+        const id =
+            this.#products.length === 0
+                ? 1
+                : this.#products[this.#products.length - 1].id + 1;
+        let errortxt = [];
+        (!title || title.length === 0) &&
+            errortxt.push("title es obligatorio.");
+        (!description || description.length === 0) &&
+            errortxt.push("description es obligatorio.");
+        (!code || code.length === 0) && errortxt.push("code es obligatorio.");
+        (!price || price.length === 0) &&
+            errortxt.push("price es obligatorio.");
+        price &&
+            (isNaN(price) || price <= 0) &&
+            errortxt.push("price tiene que ser un número positivo.");
+        (!stock || stock.length === 0) &&
+            errortxt.push("stock es obligatorio.");
+        stock &&
+            (isNaN(stock) || stock <= 0) &&
+            errortxt.push("stock tiene que ser un número positivo.");
+        (!category || category.length === 0) &&
+            errortxt.push("category es obligatorio.");
+        !Array.isArray(thumbnails) &&
+            errortxt.push("thumbnails tiene que ser un array.");
+        const found = this.#products.find((producto) => producto.code === code);
+        if (found) {
+            errortxt.push("Ya se encuentra un producto con el mismo code.");
+        }
+        if (errortxt.length > 0) {
+            return { error: 1, errortxt: errortxt };
+        } else {
+            const product = {
+                id,
+                title,
+                description,
+                price,
+                status,
+                category,
+                thumbnails,
+                code,
+                stock,
+            };
+            this.#products.push(product);
+            const saveProducts = async () => {
+                try {
+                    const filewriten = await fs.promises.writeFile(
+                        this.#path,
+                        JSON.stringify(this.#products)
+                    );
+                    return product;
+                } catch (err) {
+                    return err;
+                }
+            };
+            return saveProducts();
+        }
+    };
+
+    updateProduct = ({
+        id,
+        title,
+        description,
+        price,
+        thumbnails,
+        code,
+        stock,
+        category,
+        status,
+    }) => {
         // busco el indice del producto
         const found = this.#products.findIndex(
             (producto) => producto.id === parseInt(id)
         );
-        // Si no existo aviso por consola, sino valido los campos y guardo
+        // Si no existe devuelvo el error, sino valido los campos y guardo
         if (found < 0) {
-            console.log("Not found");
+            return { error: 2, errortxt: "el producto no existe" };
         } else {
-            let error = "";
-            error +=
-                !title || title.length === 0 ? "title es obligatorio. " : "";
-            error +=
-                !description || description.length === 0
-                    ? "description es obligatorio. "
-                    : "";
-            error +=
-                !price || price.length === 0 ? "price es obligatorio. " : "";
-            error +=
-                !thumbnail || thumbnail.length === 0
-                    ? "thumbnail es obligatorio. "
-                    : "";
-            error += !code || code.length === 0 ? "code es obligatorio. " : "";
-            error +=
-                !stock || stock.length === 0 ? "stock es obligatorio. " : "";
-
+            let errortxt = [];
+            (!title || title.length === 0) &&
+                errortxt.push("title es obligatorio.");
+            (!description || description.length === 0) &&
+                errortxt.push("description es obligatorio.");
+            (!code || code.length === 0) &&
+                errortxt.push("code es obligatorio.");
+            (!price || price.length === 0) &&
+                errortxt.push("price es obligatorio.");
+            price &&
+                (isNaN(price) || price <= 0) &&
+                errortxt.push("price tiene que ser un número positivo.");
+            (!stock || stock.length === 0) &&
+                errortxt.push("stock es obligatorio.");
+            stock &&
+                (isNaN(stock) || stock <= 0) &&
+                errortxt.push("stock tiene que ser un número positivo.");
+            (!category || category.length === 0) &&
+                errortxt.push("category es obligatorio.");
+            (!status || status.length === 0) &&
+                errortxt.push("status es obligatorio.");
+            !thumbnails && errortxt.push("status es obligatorio.");
+            !Array.isArray(thumbnails) &&
+                errortxt.push("thumbnails tiene que ser un array.");
+            // verifico si el codigo nuevo no se repite en otro producto
             const codefound = this.#products.find(
                 (producto) => producto.code === code
             );
-            // verifico si el codigo nuevo no se repite en otro producto
             if (codefound && parseInt(id) !== codefound.id) {
-                error += "Ya se encuentra un producto con el mismo code. ";
+                errortxt.push("Ya se encuentra un producto con el mismo code.");
             }
 
-            if (error.length > 0) {
-                console.log("Ocurrieron los siguientes errores: " + error);
+            if (errortxt.length > 0) {
+                return { error: 1, errortxt: errortxt };
             } else {
                 this.#products[found] = {
                     id,
                     title,
                     description,
                     price,
-                    thumbnail,
+                    status,
+                    category,
+                    thumbnails,
                     code,
                     stock,
                 };
-                //fs.writeFileSync(this.#path, JSON.stringify(this.#products));
                 const saveProducts = async () => {
                     try {
-                        fs.promises.writeFile(
+                        const filewriten = await fs.promises.writeFile(
                             this.#path,
                             JSON.stringify(this.#products)
                         );
+                        return this.#products[found];
                     } catch (err) {
-                        console.log(err);
+                        return err;
                     }
                 };
-                saveProducts();
+                return saveProducts();
             }
         }
     };
@@ -156,23 +191,23 @@ class ProductManager {
         const found = this.#products.findIndex(
             (producto) => producto.id === parseInt(id)
         );
-        // Si no existe aviso por consola, sino quito el producto del array y guardo
+        // Si no existe devuelvo el error, sino quito el producto del array y guardo
         if (found < 0) {
-            console.log("Not found");
+            return { error: 2, errortxt: "el producto no existe" };
         } else {
-            console.log(found);
             this.#products.splice(found, 1);
             const saveProducts = async () => {
                 try {
-                    fs.promises.writeFile(
+                    const filewriten = await fs.promises.writeFile(
                         this.#path,
                         JSON.stringify(this.#products)
                     );
+                    return { id: id };
                 } catch (err) {
-                    console.log(err);
+                    return err;
                 }
             };
-            saveProducts();
+            return saveProducts();
         }
     };
 }
